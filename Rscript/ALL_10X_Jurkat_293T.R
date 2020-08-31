@@ -1,0 +1,360 @@
+#fixed parameters for GiniClust2
+minCellNum           = 3                                                # filtering, remove genes expressed in fewer than minCellNum cells
+minGeneNum           = 2000                                             # filtering, remove cells expressed in fewer than minGeneNum genes
+expressed_cutoff     = 1                                                # filtering, for raw counts
+gini.bi              = 0                                                # fitting, default is 0, for qPCR data, set as 1. 
+log2.expr.cutoffl    = 0                                                # cutoff for range of gene expression   
+log2.expr.cutoffh    = 20                                               # cutoff for range of gene expression 
+Gini.pvalue_cutoff   = 0.0001                                           # fitting, Pvalue, control how many Gini genes chosen
+Norm.Gini.cutoff     = 1                                                # fitting, NormGini, control how many Gini genes chosen, 1 means not used.
+span                 = 0.9                                              # parameter for LOESS fitting
+outlier_remove       = 0.75                                             # parameter for LOESS fitting
+GeneList             = 1                                                # parameter for clustering, 1 means using pvalue, 0 means using HighNormGini
+Gamma                = 0.9                                              # parameter for clustering
+diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
+lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
+CountsForNormalized  = 100000                                           # if normalizing- by default not used
+   
+# where GiniClust2 R functions are stored
+
+#dataset specific parameters:
+MinPts               = 3                                                # parameter for DBSCAN
+eps                  = 0.45                                             # parameter for DBSCAN
+mycols               = c("grey50","greenyellow","red","blue","black","green","orange","purple","yellow","navy","magenta")
+# color setting for tSNE plot
+perplexity_G         = 30                                               # parameter for Gini tSNE
+perplexity_F         = 30                                               # parameter for Fano tSNE
+max_iter_G           = 1000                                             # parameter for Gini tSNE
+max_iter_F           = 1000                                             # parameter for Fano tSNE
+ks                   = c(2,2,2,3,3,3,3)                                 # a range of k's for k-means for subsampled data depending on rarity: use k=2 for rarer, k=3 for more common
+gap_statistic        = FALSE                                            # whether the gap statistic should be used to determine k
+K.max                = 10                                               # if using the gap statistic, highest k that should be considered
+automatic_eps        = TRUE                                             # whether to determine eps using KNN- for consistency we use the same eps as full data set here
+automatic_minpts     = TRUE                                  
+
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/jurkat_two_species/')  
+Rfundir              = "../../Rfunction/"  
+# where you put the data and results
+
+setwd(workdir)
+library(pbapply)
+library(future.apply)
+library(ROCR)
+library(Rcpp)
+#library(splatter)
+library(rflann)
+library(e1071)
+library(svd)
+library(RaceID)
+#library(minerva)
+library(FiRE)
+library(ineq)
+library(Seurat)
+library(irlba)
+source('../../Rscript/utils.R')
+#sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
+
+# data <- splatSimulate(group.prob=c(0.99, 0.01),method='groups', verbose=F,
+#                       batchCells=500,de.prob=c(0.4, 0.4), out.prob=0,
+#                       de.facLoc=0.4, de.facScale=0.8, nGenes=5000)
+# counts <- data@assays@data$counts
+# simulate.data <- list(counts=counts, group=data$Group)
+# save(simulate.data, file='DE_simulate_data.RData')
+
+source(paste(Rfundir,"GiniClust2_packages.R",sep=""))
+source(paste(Rfundir,"GiniClust2_functions.R",sep=""))
+
+
+ranger_preprocess<-function(data_mat, ngenes_keep=1000, dataSave='./', optionToSave=F, minLibSize=0, verbose=T){
+  
+  ngenes_keep = 1000
+  #write.csv(x = data_mat$gene_symbols, file = "gene_symbols.csv",quote = F,row.names =F)
+  #l<-.normalize_by_umi(data_mat)
+  l<-.normalize_by_umi_2(data_mat, dataSave, minLibSize, verbose)
+  m_n<-l$m
+  
+  if (verbose){
+    cat("Select variable Genes...\n")
+  }
+  
+  df<- .get_variable_gene(m_n)
+  gc()
+  
+  if (verbose){
+    cat("Sort Top Genes...\n")
+  }
+  
+  disp_cut_off<-sort(df$dispersion_norm,decreasing=T)[ngenes_keep]
+  
+  if (verbose){
+    cat("Cutoff Genes...\n")
+  }
+  
+  df$used<-df$dispersion_norm >= disp_cut_off
+  
+  features = head(order(-df$dispersion_norm),ngenes_keep)
+  #system("rm genes",ignore.stderr = T)
+  
+  if (optionToSave){
+    write.csv(features, file = paste(dataSave,"genes",sep=""), quote = F,row.names = F)
+    write.csv(l$use_genes[features], file = paste(dataSave,"genes_used_all",sep=""), quote = F,row.names = F)
+  }
+  
+  #genes = read.csv(file = "genes")
+  #features = genes$x
+  
+  #Final Data
+  m_n_68K<-m_n[,features]
+  m_filt<-Matrix(log2(m_n_68K+1),sparse = T)
+  
+  if (verbose){
+    cat(paste("Writing Log Normalized whole_matrix, DIM:",dim(m_filt)[1], dim(m_filt)[2]))
+  }
+  #system("rm whole_matrix",ignore.stderr = T)
+  if (optionToSave){
+    writeMM(m_filt,file="whole_matrix")
+  }
+  
+  list(preprocessedData=m_filt, selGenes=features)
+}
+
+# ---------------------------------------------
+# normalize the gene barcode matrix by umi
+# filter based on read count first
+# ---------------------------------------------
+
+.normalize_by_umi_2 <-function(x, dataSave, minLibSize, verbose){
+  mat  = x$mat
+  gene_symbols = x$gene_symbols
+  
+  #Filter Cells
+  if (minLibSize > 0){
+    
+    keepCellIndex <- c()
+    for (i in c(1:dim(mat)[1])){
+      count = sum(mat[i,] > 0)
+      if (count > minLibSize){
+        keepCellIndex <- c(keepCellIndex, i)
+      }
+    }
+    
+    mat <- mat[keepCellIndex,]
+    if (verbose){
+      cat(paste("Dimensions of matrix after cell filtering : ",dim(mat),"\n"))
+    }
+    write.csv(keepCellIndex, file = paste(dataSave,"keepCellIndexes.csv",sep=""), quote = F,row.names = F)
+  }
+  
+  #Filter Genes
+  cs <- colSums(mat>2)
+  x_use_genes <- which(cs > 3)
+  
+  x_filt<-mat[,x_use_genes]
+  gene_symbols = gene_symbols[x_use_genes]
+  if (verbose){
+    cat("Dimensions os filtered Matrix:")
+    cat(paste(dim(x_filt),"\n"))
+  }
+  
+  rs<-rowSums(x_filt)
+  rs_med<-median(rs)
+  x_norm<-x_filt/(rs/rs_med)
+  list(m=x_norm,use_genes=gene_symbols)
+}
+
+
+# --------------------------------------------------
+# get variable genes from normalized UMI counts
+# --------------------------------------------------
+# m: matrix normalized by UMI counts
+.get_variable_gene<-function(m){
+  
+  df<-data.frame(mean=colMeans(m),cv=apply(m,2,sd)/colMeans(m),var=apply(m,2,var))
+  df$dispersion<-with(df,var/mean)
+  df$mean_bin<-with(df,cut(mean,breaks=c(-Inf,quantile(mean,seq(0.1,1,0.05)),Inf)))
+  var_by_bin<-ddply(df,"mean_bin",function(x) {
+    data.frame(bin_median=median(x$dispersion),
+               bin_mad=mad(x$dispersion))
+  })
+  df$bin_disp_median<-var_by_bin$bin_median[match(df$mean_bin,var_by_bin$mean_bin)]
+  df$bin_disp_mad<-var_by_bin$bin_mad[match(df$mean_bin,var_by_bin$mean_bin)]
+  df$dispersion_norm<-with(df,abs(dispersion-bin_disp_median)/bin_disp_mad)
+  df
+}
+
+
+transform.gini <- function(){
+  gini.res <- list()
+  for(i in 1:length(Gini.result)){
+    cnt <- table(Gini.result[[i]])
+    cnt.top <- table(Gini.result[[i]][1:5])
+    small <- names(cnt)[cnt <= sum(cnt) * 0.15] # 0.15 is for 100 cells or a little more
+    small <- small[small != 'Singleton']
+    small <- small[small %in% names(cnt.top)]
+    if(length(small)>=1){
+      gini.res[[i]] <- ifelse(Gini.result[[i]] %in% small, 1, 0)
+      
+    }else{
+      gini.res[[i]] <- (rep(0, length(Gini.result[[i]])))
+    }
+  }
+  return(gini.res)
+}
+
+
+transform.race <- function(){
+  race.res <- list()
+  for(i in 1:length(RaceID.result)){
+    
+    cnt <- table(RaceID.result[[i]])
+    cnt.top <- table(RaceID.result[[i]][1:5])
+    small <- names(cnt)[cnt <= sum(cnt) * 0.15] # 0.15 is for 100 cells or a little more
+    small <- small[small %in% names(cnt.top)]
+    if(length(small)>=1){
+      race.res[[i]] <- ifelse(RaceID.result[[i]] %in% small, 1, 0)
+      
+    }else{
+      race.res[[i]] <- (rep(0, length(RaceID.result[[i]])))
+    }
+    
+  }
+  return(race.res)
+}
+
+
+
+
+#
+set.seed(2019)
+
+RaceID.result <- list()
+Gini.result <- list()
+OUR.result <- list()
+FiRE.result <- list()
+jurkat.num.vec <- c(8, 16, 24, 32, 40, 48, 56, 65, 73, 82)
+for(jurkat.num in jurkat.num.vec){
+  #load('DE_simulate_data.RData')
+  experment_id <- which(jurkat.num.vec %in% jurkat.num)
+  exprimentID<-paste0('Jurkat_', jurkat.num, '_293_1580_cells.RData')
+  load(paste0('./results/', exprimentID))
+  
+  data <- as.matrix(jurkat.293[rowMeans(jurkat.293) > 0,])
+  zero.cnt <- apply(data, 1, function(x){length(x[x>0])})
+  data <- data[zero.cnt>=2,]
+  norm.data <- .normalize_by_umi(t(data), gene_symbols = dimnames(data)[[1]], minLibSize=0, verbose = F)
+  data2 <- t(norm.data$m)
+  data21 <- data2
+  data2 <- log2(data2 + 1)
+  #group <- simulate.data$group
+  group <- ifelse(grepl('Jurkat', dimnames(data2)[[2]]), 'Group1', 'Group2')
+  
+  #########################################################
+  sc <- SCseq(data2)
+  sc.temp <- sc
+  sc <- filterdata(sc,mintotal=min(colSums(data2))-1, minexpr=min(data2[data2>0]-0.001), minnumber=1)
+  fdata <- getfdata(sc)
+  features <- sc@cluster$features
+  
+  
+  sc <- compdist(sc,metric="pearson")
+  sc <- clustexp(sc)
+  sc <- clustexp(sc,cln=1,sat=FALSE)
+  sc <- findoutliers(sc)
+  
+  finalcls <- (sc@cpart)
+  print(table(finalcls, group))
+  RaceID.result[[experment_id]] <- finalcls
+  rm('sc')
+  gc()
+  
+  res <- GapClust::GapClust(data21)
+  
+  predictions <- rep(0, dim(data2)[2])
+  predictions[res$rare_cell_indices[[which.max(res$skewness[as.integer(names(res$rare_cell_indices))])]]] <- 1
+  
+  print(table(predictions, group))
+  #predictions <- ifelse(1:dim(pca$pca)[1] %in% filtered[res$cluster == best.cluster], 1, 0)
+  
+  OUR.result[[experment_id]] <- predictions
+  # a1.ave.group <- matrix(NA, length(a1.ave.k), length(table(predictions)))
+  # group.id <- NULL
+  # for(k in 1:length(a1.ave.k)){
+  #   den <- density(a1.ave.k[[k]])
+  #   cutoff <- find_elbow(den$x[which.max(den$y):length(den$x)], den$y[which.max(den$y):length(den$y)])
+  #   a1.ave.group[k,] <- (tapply(a1.ave.k[[k]], predictions, mean) > cutoff)
+  #   if(k==1){
+  #     group.id <- names(tapply(a1.ave.k[[k]], predictions, mean))
+  #   }
+  # }
+  # ident <- apply(a1.ave.group, 2, function(x){all(!x)})
+  # 
+  # predictions[predictions %in% c(as.integer(group.id[ident]))] <- 0
+  print(table(predictions, group))
+  pred <- prediction(predictions, group)
+  perf <- performance(pred, "auc")
+  
+  print(perf@y.values[[1]])
+  
+  
+  #########################################################################
+  ExprM.normCounts.filter <- data21
+  source(paste(Rfundir,"GiniClust2_fitting_DE.R",sep=""))
+  ExprM.RawCounts<-ExprM.RawCounts.filter
+  
+  source(paste(Rfundir,"GiniClust2_Gini_clustering.R",sep=""))
+  print(length(P_G))
+  Gini.result[[experment_id]] <- P_G
+  #########################################################################
+  
+  
+  data1 <- t(data2) #Samples * Features
+  
+  #Genes
+  genes <- c(1:dim(data1)[2]) #It can be replaced with original gene names
+  
+  data_mat <- list(mat=data1, gene_symbols=genes)
+  preprocessedList <- ranger_preprocess(data_mat)
+  preprocessedData <- as.matrix(preprocessedList$preprocessedData)
+  model <- new(FiRE::FiRE, 100, 50, 1017881, 5489, 0)
+  model$fit(preprocessedData)
+  score <- model$score(preprocessedData)
+  
+  #Apply IQR-based criteria to identify rare cells for further downstream analysis.
+  q3 <- quantile(score, 0.75)
+  iqr <- IQR(score)
+  th1 <- q3 + (1.5*iqr)
+  th2 <- q3 + (1*iqr)
+  th3 <- q3 + (0.5*iqr)
+  
+  #Select indexes that satisfy IQR-based thresholding criteria.
+  indIqr <- which(score >= th1)
+  
+  #Create a file with binary predictions
+  predictions.15 <- integer(dim(data1)[1])
+  predictions.15[which(score >= th1)] <- 1 #Replace predictions for rare cells with '1'.
+  predictions.10 <- integer(dim(data1)[1])
+  predictions.10[which(score >= th2)] <- 1 #Replace predictions for rare cells with '1'.
+  predictions.05 <- integer(dim(data1)[1])
+  predictions.05[which(score >= th3)] <- 1 #Replace predictions for rare cells with '1'.
+  
+  FiRE.result[[experment_id]] <- predictions.15
+  
+  perf.15 <- performance(prediction(predictions.15, group), "auc")
+  perf.10 <- performance(prediction(predictions.10, group), "auc")
+  perf.05 <- performance(prediction(predictions.05, group), "auc")
+  
+  print(perf.15@y.values[[1]])
+  print(perf.10@y.values[[1]])
+  print(perf.05@y.values[[1]])
+  
+}
+
+
+save(RaceID.result, file='results/RaceIDClustering.RData')
+save(OUR.result, file='results/OURClustering.RData')
+save(Gini.result, file='results/GiniClustering.RData')
+save(FiRE.result, file='results/FiREClustering.RData')
+
+
+
