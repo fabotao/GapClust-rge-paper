@@ -14,7 +14,6 @@ Gamma                = 0.9                                              # parame
 diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
 lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
 CountsForNormalized  = 100000                                           # if normalizing- by default not used
-Rfundir              = "/home/sam/Documents/RareCellDetection/Rfunction/"     
 # where GiniClust2 R functions are stored
 
 #dataset specific parameters:
@@ -32,8 +31,10 @@ K.max                = 10                                               # if usi
 automatic_eps        = TRUE                                             # whether to determine eps using KNN- for consistency we use the same eps as full data set here
 automatic_minpts     = TRUE                                  
 
-source('utils.R')
-workdir              = paste0(getwd(), '/../Rproj/Doublet')   
+
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/Doublet/')  
+Rfundir              = "../../Rfunction/"  
 # where you put the data and results
 
 setwd(workdir)
@@ -51,7 +52,7 @@ library(FiRE)
 library(ineq)
 library(Seurat)
 library(irlba)
-
+source('../../Rscript/utils.R')
 #sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 
 source("../../Rfunction/GiniClust2_packages.R")

@@ -14,7 +14,6 @@ Gamma                = 0.9                                              # parame
 diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
 lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
 CountsForNormalized  = 100000                                           # if normalizing- by default not used
-Rfundir              = "/home/sam/Documents/RareCellDetection/Rfunction/"     
                                                                         # where GiniClust2 R functions are stored
 
 #dataset specific parameters:
@@ -33,6 +32,7 @@ automatic_eps        = TRUE                                             # whethe
 automatic_minpts     = TRUE                                             # whether to determine MinPts based on the size of the data set                                          
 homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
 workdir              = paste0(homedir, '/Rproj/10X_subsample/')  
+Rfundir              = paste0(homedir, '/Rfunction/')   
 # where you put the data and results
 
 setwd(workdir)

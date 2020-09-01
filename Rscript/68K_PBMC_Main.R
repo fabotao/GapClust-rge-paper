@@ -7,12 +7,13 @@ library(scran)
 library(ggplot2)
 library(pbapply)
 library(future.apply)
-source('utils.R')
-workdir              = paste0(getwd(), '/../Rproj/10X_full')  
+
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/10X_full/')  
 # where you put the data and results
 
 setwd(workdir)
-
+source('../../Rscript/utils.R')
 load('data/PBMC_68K_normalized.RData')
 load('data/PBMC_68K_normalized_gene_symbols.RData')
 

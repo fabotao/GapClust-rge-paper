@@ -14,7 +14,6 @@ Gamma                = 0.9                                              # parame
 diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
 lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
 CountsForNormalized  = 100000                                           # if normalizing- by default not used
-Rfundir              = "/home/sam/Documents/RareCellDetection/Rfunction/"     
 # where GiniClust2 R functions are stored
 
 #dataset specific parameters:
@@ -33,7 +32,9 @@ automatic_eps        = TRUE                                             # whethe
 automatic_minpts     = TRUE                                  
 
 
-workdir              = "/home/sam/Documents/RareCellDetection/Proj/10X_subsample_A/"    
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/10X_DE_sensitivity/')  
+Rfundir              = "../../Rfunction/"  
 # where you put the data and results
 
 setwd(workdir)
@@ -49,7 +50,6 @@ library(RaceID)
 library(minerva)
 library(FiRE)
 source('../../Main/utils.R')
-sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 
 # data <- splatSimulate(group.prob=c(0.99, 0.01),method='groups', verbose=F,
 #                       batchCells=500,de.prob=c(0.4, 0.4), out.prob=0,
@@ -295,71 +295,104 @@ for(num in DE.range){
     rm('sc')
     gc()
     ##################################################################################################
-    pca <- prcomp(t(data2[dimnames(data2)[[1]] %in% features,]))
+    empty.id <- which(nchar(dimnames(data2)[[1]])==0)
+    dimnames(data2)[[1]][empty.id] <- paste0('Define', empty.id)
+    pbmc <- CreateSeuratObject(count = data2)
+    pbmc <- NormalizeData(object = pbmc, verbose = F)
     
-    #pca <- calcul.pca(t(data[order(disp, decreasing = T)[1:2000],]), 50)
-    #knn.res <- Neighbour(pca$pca, pca$pca, k=200)
-    pca$pca <- pca$x[,1:min(50, dim(pca$x)[2])]
-    knn.res <- Neighbour(pca$pca, pca$pca, k=200)
-    
-    skew <- c()
-    for(j in 3:200){
-      pp <- apply(knn.res$distances, 1, function(x){sum(1/x[2:j])})
-      ww <- apply(knn.res$distances, 1, function(x){sum(1/(x[2:j])^2)})
-      a <- (ww)^(1/2)/pp
-      a1 <- c()
-      for(m in 1:dim(pca$pca)[1]){a1 <- c(a1, (a[m] + a[knn.res$indices[m,2]])/2)}
-      skew <- c(skew, skewness(a1))
-    }
-    max.ids <- (3:200)[which.peaks(skew)]
-    if(length(max.ids) > 1){
-      delta.r <- c()
-      for(max.id in max.ids){
-        pp <- apply(knn.res$distances, 1, function(x){sum(1/x[2:max.id])})
-        ww <- apply(knn.res$distances, 1, function(x){sum(1/(x[2:max.id])^2)})
-        a <- (ww)^(1/2)/pp
-        a1 <- c()
-        for(m in 1:dim(pca$pca)[1]){a1 <- c(a1, (a[m] + a[knn.res$indices[m,2]])/2)}
-        ave <- apply(knn.res$distances[,2:max.id], 1, mean)
-        fit <- lm(log(ave/a1)~log(ave))
-        r1 <- (summary(fit)$adj.r.squared)
-        big.id <- which(ave > quantile(ave, 0.25))
-        fit1 <- lm(log(ave[big.id]/a1[big.id])~log(ave[big.id]))
-        r2 <- (summary(fit1)$adj.r.squared)
-        delta.r <- c(delta.r, r1 - r2)
-      }
-      best.k <- max.ids[which.max(delta.r)]
+    ## Different Fano genes for clustering
+    pbmc <- FindVariableFeatures(object = pbmc, selection.method='vst', nfeatures=dim(data2)[1], verbose = F)
+    vst <- (pbmc@assays$RNA@meta.features$vst.variance.standardized)
+    den <- density(vst)
+    features.vst <- dimnames(data2)[[1]][vst > find_elbow(den$x[which.max(den$y):length(den$x)], den$y[which.max(den$y):length(den$y)])]
+    tmp <- log2(data2[dimnames(data2)[[1]] %in% (features.vst),]+1)
+    cell.sum <- apply(tmp, 2, sum)
+    drop <- apply(tmp, 2, function(x){length(x[x>0])})
+    zero.id <- c(which(drop < 3))
+
+    if(length(zero.id)>=1){
+      tmp <- tmp[, -zero.id]
     }else{
-      best.k <- max.ids[1]
+      tmp <- tmp
     }
-    pp <- apply(knn.res$distances, 1, function(x){sum(1/x[2:best.k])})
-    ww <- apply(knn.res$distances, 1, function(x){sum(1/(x[2:best.k])^2)})
-    a <- (ww)^(1/2)/pp
-    a1 <- c()
-    for(m in 1:dim(pca$pca)[1]){a1 <- c(a1, (a[m] + a[knn.res$indices[m,2]])/2)}
-    ave <- apply(knn.res$distances[,2:best.k], 1, mean)
-    remain = which(ave > quantile(ave, 0.25))
-    den <- density(a1[remain])
-    mid.val <- (min(den$x) + max(den$x))/2
-    mid <- min(which(den$x > mid.val))
-    elbow <- find_elbow(den$x[which.max(den$y):mid], den$y[which.max(den$y):mid])
-    #filtered <- remain[a1[remain] > elbow]
-    filtered <- remain[order(a1[remain], decreasing = T)[1:min(best.k*2, 200)]]
-    res <- dbscan::hdbscan(pca$pca[filtered,], minPts = 2)
-    cluster.ave <- tapply(a1[filtered], res$cluster, mean)
-    best.cluster <- names(cluster.ave)[which.max(cluster.ave)]
     
-    predictions <- ifelse(1:dim(pca$pca)[1] %in% filtered[res$cluster == best.cluster], 1, 2)
+    pca <- irlba(t(tmp), nv=min(c(50, dim(tmp)-1)))
+    pca$pca <-t(pca$d*t(pca$u))
     
-    pred <- prediction(predictions, group)
-    perf <- performance(pred, "auc")
+    sample.all <- ceiling(dim(tmp)[2] * 0.4)
+    knn.res <- Neighbour(pca$pca, pca$pca, k=sample.all)
+    
+    distance.diff <- knn.res$distances[, -1, drop = FALSE] - knn.res$distances[, -ncol(knn.res$distances), drop = FALSE]
+    
+    diff.left <- distance.diff[, -1, drop = FALSE] - distance.diff[, -ncol(distance.diff), drop = FALSE]
+    diff.both <- diff.left[, -ncol(diff.left), drop=FALSE] - diff.left[, -1, drop=FALSE]
+    diff.both[,1] <- diff.both[,1] + distance.diff[,1]  # Very important due to distance variation to the first neighbor.
+    
+    v1.k <- matrix(NA, dim(tmp)[2], dim(diff.both)[2])
+    skew <- c()
+    top.values.ave <- c()
+    for(j in 1:dim(diff.both)[2]){
+      v <- diff.both[,j]
+      v1 <- v
+      for(m in 1:length(v)){
+        v1[m] <- (v[m] + v[knn.res$indices[m,2]])/2
+      }
+      v1.k[, j] <- (v1)
+      v2 <- v1[order(v1, decreasing = T)[(j+2):length(v1)]]
+      v2[is.na(v2)] <- 0
+      top.values <- v1[knn.res$indices[which.max(v1),1:(j+1)]]
+      v2 <- c(v2[v2 <= (quantile(v2, 0.75)+1.5*IQR(v2)) & v2 >= (quantile(v2, 0.25)-1.5*IQR(v2))], rep(sum(top.values[top.values>0])/length(top.values), (2)))
+      skew <- c(skew, skewness(v2))
+      top.values.ave <- c(top.values.ave, mean(top.values))
+    }
+    
+    ids <- which(skew > 2)
+    if(length(ids)==0){
+      predictions <- c(rep(0, dim(tmp)[2]))
+    }else{
+      col.mat <- matrix(0, length(ids), dim(tmp)[2])
+      for(i in 1:length(ids)){
+        top.cell <- which.max(v1.k[,(ids[i])])
+        col.mat[i, knn.res$indices[top.cell,1:(ids[i]+1)]] <- skew[ids[i]] * top.values.ave[ids[i]]
+      }
+      
+      id.max <- apply(col.mat, 2, which.max)
+      max.val <- apply(col.mat, 2, max)
+      id.max[max.val==0] <- 0
+      cnt <- table(id.max)
+      cnt <- cnt[names(cnt)!='0']
+      id.max.match <- cnt[which(cnt == (ids[as.integer(names(cnt))] + 1))] - 1
+      
+      cls <- rep(0, dim(tmp)[2])
+      for(id.match in id.max.match){
+        cls[id.max==(id.match)] <- which(id.max.match %in% id.match)
+      }
+      
+      id.match.max <- id.max.match[which.max(skew[id.max.match])]
+      rare.cells <- knn.res$indices[which.max(v1.k[,id.match.max]), 1:(id.match.max+1)]
+      
+      predictions <- ifelse(1:dim(pca$pca)[1] %in% rare.cells, 1, 2)
+      
+    }
+    if(length(zero.id)>=1){
+      if(length(table(group[-zero.id]))>1){
+        pred <- prediction(c(predictions, rep(2, length(zero.id))), c(group[-zero.id], rep('Group2', length(zero.id))))
+        perf <- performance(pred, "auc")
+        print(perf@y.values[[1]])
+        auc.our <- c(auc.our, perf@y.values[[1]])
+      }else{
+        print(0.5)
+        auc.our <- c(auc.our, 0.5)
+      }
+      
+    }else{
+      pred <- prediction(predictions, group)
+      perf <- performance(pred, "auc")
+      print(perf@y.values[[1]])
+      auc.our <- c(auc.our, perf@y.values[[1]])
+    }
     
     print(num)
-    print(perf@y.values[[1]])
-    #auc.vec <- c(auc.vec, perf@y.values[[1]])
-    auc.our <- c(auc.our, perf@y.values[[1]])
-    
-    
     #########################################################################
     ExprM.normCounts.filter <- data2
     source(paste(Rfundir,"GiniClust2_fitting_DE.R",sep=""))
