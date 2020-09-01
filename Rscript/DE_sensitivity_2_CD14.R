@@ -49,7 +49,7 @@ library(svd)
 library(RaceID)
 library(minerva)
 library(FiRE)
-source('../../Main/utils.R')
+source('../../Rscript/utils.R')
 
 # data <- splatSimulate(group.prob=c(0.99, 0.01),method='groups', verbose=F,
 #                       batchCells=500,de.prob=c(0.4, 0.4), out.prob=0,

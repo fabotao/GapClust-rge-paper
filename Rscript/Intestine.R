@@ -9,11 +9,12 @@ library(scran)
 library(ggplot2)
 library(pbapply)
 library(future.apply)
-workdir              = "/home/sam/Documents/RareCellDetection/Proj/Intestine/"     
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/Intestine/')  
 # where you put the data and results
 
 setwd(workdir)
-source('../../Main/utils.R')
+source('../../Rscript/utils.R')
 #sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 
 matrix_dir = 'GSE123516_RAW/'

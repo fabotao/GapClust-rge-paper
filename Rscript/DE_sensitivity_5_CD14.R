@@ -14,7 +14,6 @@ Gamma                = 0.9                                              # parame
 diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
 lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
 CountsForNormalized  = 100000                                           # if normalizing- by default not used
-Rfundir              = "/home/sam/Documents/RareCellDetection/Rfunction/"     
 # where GiniClust2 R functions are stored
 
 #dataset specific parameters:
@@ -33,7 +32,9 @@ automatic_eps        = TRUE                                             # whethe
 automatic_minpts     = TRUE                                  
 
 
-workdir              = "/home/sam/Documents/RareCellDetection/Proj/10X_subsample_A/"    
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/10X_DE_sensitivity/')  
+Rfundir              = "../../Rfunction/"  
 # where you put the data and results
 
 setwd(workdir)
@@ -48,15 +49,7 @@ library(svd)
 library(RaceID)
 library(minerva)
 library(FiRE)
-source('../../Main/utils.R')
-sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
-
-# data <- splatSimulate(group.prob=c(0.99, 0.01),method='groups', verbose=F,
-#                       batchCells=500,de.prob=c(0.4, 0.4), out.prob=0,
-#                       de.facLoc=0.4, de.facScale=0.8, nGenes=5000)
-# counts <- data@assays@data$counts
-# simulate.data <- list(counts=counts, group=data$Group)
-# save(simulate.data, file='DE_simulate_data.RData')
+source('../../Rscript/utils.R')
 
 source(paste(Rfundir,"GiniClust2_packages.R",sep=""))
 source(paste(Rfundir,"GiniClust2_functions.R",sep=""))
