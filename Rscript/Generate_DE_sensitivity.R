@@ -9,7 +9,7 @@ library(rflann)
 library(e1071)
 library(svd)
 library(irlba)
-sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
+#sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 source('/home/sam/Documents/RareCellDetection/Main/utils.R')
 
 data <- read.csv('ExprM_3_subtypes_filter.csv', header=T)
