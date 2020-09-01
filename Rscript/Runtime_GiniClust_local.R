@@ -14,7 +14,7 @@ Gamma                = 0.9                                              # parame
 diff.cutoff          = 1                                                # MAST analysis, filter genes that don't have high a log2_foldchange to reduce gene num
 lr.p_value_cutoff    = 1e-5                                             # MAST analysis, pvalue cutoff to identify differentially expressed genes
 CountsForNormalized  = 100000                                           # if normalizing- by default not used
-Rfundir              = "/lustre/home/acct-clsyzs/clsyzs/btfa/Runtime/Rfunction/"         
+       
 # where GiniClust2 R functions are stored
 
 #dataset specific parameters:
@@ -31,11 +31,12 @@ gap_statistic        = FALSE                                            # whethe
 K.max                = 10                                               # if using the gap statistic, highest k that should be considered
 automatic_eps        = TRUE                                             # whether to determine eps using KNN- for consistency we use the same eps as full data set here
 automatic_minpts     = TRUE                                             # whether to determine MinPts based on the size of the data set                                          
-workdir              = "/lustre/home/acct-clsyzs/clsyzs/btfa/Runtime/"          
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/Runtime/')  
 # where you put the data and results
 
-
 setwd(workdir)
+Rfundir              = "../../Rfunction/"  
 #dir.create(file.path(workdir, "results"), showWarnings = FALSE) #folder to save results
 #dir.create(file.path(workdir, "figures"), showWarnings = FALSE) #folder to save figures
 #load packages and functions
@@ -48,7 +49,7 @@ source(paste(Rfundir,"GiniClust2_functions.R",sep=""))
 
 #for each of 99 data sets, run GiniClust2
 #for each, plot a barplot comparing the reference and the GiniClust2 result
-load('/Proj/10X_full/data/PBMC_68K_normalized.RData')
+load('../10X_full/data/PBMC_68K_normalized.RData')
 
 cell.num <- c(1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 68579)
 

@@ -1,5 +1,5 @@
-library(FiRE)
-workdir              = "/lustre/home/acct-clsyzs/clsyzs/btfa/Runtime"    
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/Runtime/')  
 # where you put the data and results
 
 setwd(workdir)
@@ -125,7 +125,7 @@ ranger_preprocess<-function(data_mat, ngenes_keep=1000, dataSave='./', optionToS
 }
 
 
-load('PBMC_68K_normalized.RData')
+load('../10X_full/data/PBMC_68K_normalized.RData')
 
 
 cell.num <- c(1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 68579)

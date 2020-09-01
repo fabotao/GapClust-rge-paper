@@ -15,7 +15,6 @@ workdir              = paste0(homedir, '/Rproj/Intestine/')
 
 setwd(workdir)
 source('../../Rscript/utils.R')
-#sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 
 matrix_dir = 'GSE123516_RAW/'
 setwd(workdir)
