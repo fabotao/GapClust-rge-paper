@@ -34,3 +34,6 @@ Materials (datasets & R code) for reproduction of published results in the paper
 |____10X_full                                      GapClust applied to the 68 k PBMC dataset to identify rare cells
 
 ```
+
+## Notes when running codes
+* Please modify the homedir variable to change the working directory, aiming to make sure the code can run properly on your machine. 
