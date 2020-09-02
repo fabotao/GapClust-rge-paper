@@ -1,11 +1,10 @@
 library(ggplot2)
 library(ComplexHeatmap)
-library(splatter)
-workdir              = "/home/sam/Documents/RareCellDetection/Proj/10X_subsample_A/"     
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/10X_subsample/')  
 # where you put the data and results
 
 setwd(workdir)
-
 
 load('results/RaceIDClustering.RData') # RaceID.result
 load('results/OURClustering.RData') # GapClust.result

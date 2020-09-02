@@ -1,6 +1,10 @@
-setwd('/home/sam/Documents/RareCellDetection/Proj/Runtime/')
-
 library(ggplot2)
+
+homedir = '/home/sam/Documents/FBT/Single/package/GapClust_manuscript'
+workdir              = paste0(homedir, '/Rproj/Runtime/')  
+# where you put the data and results
+
+setwd(workdir)
 
 ## Memory usage plot
 memory.dat <- data.frame(method=c('GiniClust', 'RaceID', 'CellSIUS','FiRE', 'GapClust'),
