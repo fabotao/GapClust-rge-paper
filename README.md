@@ -26,7 +26,7 @@ Materials (datasets & R code) for reproduction of published results in the paper
 |                                                                 differentail expressed (DE) genes.
 |
 |____Runtime                                     Simulation experiments including 16 datasets subsampled from 68 k PBMC dataset with 
-|                                                                 100 - ~68000 cells to track the computation time and memory usage
+|                                                                 1000 - ~68000 cells to track the computation time and memory usage
 |
 |____Intestine                                     GapClust applied to the intestine dataset to identify rare cells
 |
