@@ -49,6 +49,8 @@ library(svd)
 library(RaceID)
 library(minerva)
 library(FiRE)
+library(Seurat)
+library(irlba)
 source('../../Rscript/utils.R')
 
 # data <- splatSimulate(group.prob=c(0.99, 0.01),method='groups', verbose=F,
@@ -306,7 +308,7 @@ for(num in DE.range){
     den <- density(vst)
     features.vst <- dimnames(data2)[[1]][vst > find_elbow(den$x[which.max(den$y):length(den$x)], den$y[which.max(den$y):length(den$y)])]
     tmp <- log2(data2[dimnames(data2)[[1]] %in% (features.vst),]+1)
-    cell.sum <- apply(tmp, 2, sum)
+    #cell.sum <- apply(tmp, 2, sum)
     drop <- apply(tmp, 2, function(x){length(x[x>0])})
     zero.id <- c(which(drop < 3))
 
@@ -508,7 +510,8 @@ for(num in DE.range){
   
   rm(list=c('data2', 'pca', 'pp', 'ww', 'knn.res', 'auc.vec', 'auc.our', 'auc.gini', 'auc.fire.15', 'auc.fire.10', 'auc.fire.05',
             'pred', 'perf', 'Gini.result', 'predictions', 'data1', 'data_mat', 'RaceID.result', 'preprocessedList', 'preprocessedData',
-            'model', 'ExprM.normCounts.filter', 'ExprM.RawCounts'))
+            'model', 'ExprM.normCounts.filter', 'ExprM.RawCounts', 'diff.both', 'diff.left', 'distance.diff', 'features', 'vst', 'v1.k', 
+            'rare.cells', 'col.mat', 'sc', 'sc.temp', 'fdata'))
   gc()
   res.num <- list(auc.ave, auc.std, auc.ave.our, auc.std.our, auc.ave.gini, auc.std.gini, auc.ave.15, auc.std.15,
                   auc.ave.10, auc.std.10, auc.ave.05, auc.std.05)

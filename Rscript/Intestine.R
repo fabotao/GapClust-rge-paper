@@ -16,43 +16,9 @@ workdir              = paste0(homedir, '/Rproj/Intestine/')
 setwd(workdir)
 source('../../Rscript/utils.R')
 
-matrix_dir = 'GSE123516_RAW/'
-setwd(workdir)
-
 library(Matrix)
 
-read.data <- function(file_id){
-  barcode.path <- paste0(matrix_dir, file_id, "_barcodes.tsv.gz")
-  features.path <- paste0(matrix_dir, file_id, "_genes.tsv.gz")
-  matrix.path <- paste0(matrix_dir, file_id, ".mtx.gz")
-  mat <- readMM(file = matrix.path)
-  feature.names = read.delim(features.path, 
-                             header = FALSE,
-                             stringsAsFactors = FALSE)
-  barcode.names = read.delim(barcode.path, 
-                             header = FALSE,
-                             stringsAsFactors = FALSE)
-  colnames(mat) = barcode.names$V1
-  rownames(mat) = feature.names$V2
-  return(mat)
-}
-
-files <- c('GSM3308717_C04', 'GSM3308718_C05', 'GSM3308719_C06', 'GSM3308720_C07')
-
-mat1 <- read.data(files[1])
-mat2 <- read.data(files[2])
-#mat3 <- read.data(files[3])
-#mat4 <- read.data(files[4])
-
-
-all(mat1@Dimnames[[1]] == mat2@Dimnames[[1]])
-#all(mat1@Dimnames[[1]] == mat3@Dimnames[[1]])
-#all(mat1@Dimnames[[1]] == mat4@Dimnames[[1]])
-#all(mat2@Dimnames[[1]] == mat4@Dimnames[[1]])
-#all(mat3@Dimnames[[1]] == mat4@Dimnames[[1]])
-#all(mat2@Dimnames[[1]] == mat3@Dimnames[[1]])
-
-
+load('Intestine_GSM3308718_C05.RData')
 ###############################################################
 OUR.result <- list()
 #for (i in 2:100){
