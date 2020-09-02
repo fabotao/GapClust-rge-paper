@@ -20,134 +20,22 @@ library(Matrix)
 
 load('Intestine_GSM3308718_C05.RData')
 ###############################################################
-OUR.result <- list()
-#for (i in 2:100){
-  #k=ks[j]
+data <- as.matrix(mat2)
+drop <- apply(data, 1, function(x){length(x[x>0])})
+data <- data[drop>=2,]
+sample.expressed <- apply(data, 2, function(x){length(x[x>0])})
+data <- data[, sample.expressed>=200]
+norm.data <- .normalize_by_umi(t(data), gene_symbols = dimnames(data)[[1]], minLibSize=0, verbose = F)
+data2 <- t(norm.data$m)
 
-  
-  #data <- ExprM.normCounts.filter[rowMeans(ExprM.normCounts.filter) > 0,]
-  #data <- log2(data + 1)
-  #disp <- FastLogVMR(as(data, 'dgCMatrix'), F)
-  
-  data <- as.matrix(mat2)
-  drop <- apply(data, 1, function(x){length(x[x>0])})
-  data <- data[drop>=2,]
-  sample.expressed <- apply(data, 2, function(x){length(x[x>0])})
-  data <- data[, sample.expressed>=200]
-  norm.data <- .normalize_by_umi(t(data), gene_symbols = dimnames(data)[[1]], minLibSize=0, verbose = F)
-  data2 <- t(norm.data$m)
-  
-  data2 <- data[dimnames(data2)[[1]],]
-  sf <- computeSumFactors(data2)
-  
-  data2 <- t(t(data2)/sf)
-  #data2 <- log2(data +1)
-  #sc <- SCseq(data2)
-  #sc.temp <- sc
-  #sc <- filterdata(sc,mintotal=min(colSums(data2))-1, minexpr=min(data2[data2>0]-0.001), minnumber=1)
-  #fdata <- getfdata(sc)
-  #features <- sc@cluster$features
-  
-  pbmc <- CreateSeuratObject(count = data2)
-  #pbmc <- NormalizeData(object = pbmc, verbose = F) # top vst features were same whether normalization is applied or not for this dataset, as is the same with 68 k PBMC data set.
-  
-  ## Different Fano genes for clustering
-  pbmc <- FindVariableFeatures(object = pbmc, selection.method='vst', nfeatures=dim(data2)[1], verbose = F)
-  vst <- (pbmc@assays$RNA@meta.features$vst.variance.standardized)
-  den <- density(vst)
-  features.vst <- dimnames(data2)[[1]][vst > find_elbow(den$x[which.max(den$y):length(den$x)], den$y[which.max(den$y):length(den$y)])]
-  #features.vst <- dimnames(data2)[[1]][vst > mean(vst) + 1.96 * sd(vst)]
-  #features.vst <- dimnames(data2)[[1]][order(vst, decreasing = T)[1:2000]]
-  ##################################################################################################
-  #tmp <- data2[dimnames(data2)[[1]] %in% union(features, features.vst),]
-  tmp <- data2[dimnames(data2)[[1]] %in% (features.vst),]
-  tmp <- log2(tmp+1)
-  #tmp1 <- .normalize_by_umi(t(tmp), gene_symbols = dimnames(tmp)[[1]], minLibSize=0, verbose = F)
-  cell.sum <- apply(tmp, 2, sum)
-  tmp <- t(t(tmp)/(cell.sum/mean(cell.sum)))
-  #tmp <- tmp1$m
-  #pca <- calcul.pca(t(log2(tmp+1)), 50)
-  pca <- irlba(t(tmp), nv=50) # More robust no error, contrast to calcul.pca
-  pca$pca <-t(pca$d*t(pca$u))
-  #pca <- calcul.pca(t(data[dimnames(data)[[1]] %in% features,]), 50)
-  #pca <- prcomp(t(tmp))
-  #pca$pca <- pca$x[,1:min(50, dim(pca$x)[2])]
-  #pca <- calcul.pca(t(data[order(disp, decreasing = T)[1:2000],]), 50)
-  #knn.res <- Neighbour(pca$pca, pca$pca, k=200)
-  
-  knn.res <- Neighbour(pca$pca, pca$pca, k=450)
-  
-  distance.diff <- (knn.res$distances[, -1, drop = FALSE] - knn.res$distances[, -ncol(knn.res$distances), drop = FALSE])
-  
-  diff.left <- distance.diff[, -1, drop = FALSE] - distance.diff[, -ncol(distance.diff), drop = FALSE]
-  diff.both <- diff.left[, -ncol(diff.left), drop=FALSE] - diff.left[, -1, drop=FALSE]
-  diff.both[,1] <- diff.both[,1] + distance.diff[,1]  # Very important due to distance variation to the first neighbor.
-  
-  v1.k <- matrix(NA, dim(data2)[2], 447)
-  skew <- c()
-  skew1 <- c()
-  top.ave <- c()
-  remain.ave <- c()
-  for(j in 1:dim(diff.both)[2]){
-    #v <- (distance.diff[,j])
-    #v <- pmax(distance.diff[,j], diff.both[,j-1])
-    v <- diff.both[,j]
-    v1 <- v
-    for(m in 1:length(v)){
-      #v1[m] <- (v[m] + sum(v[knn.res$indices[m,2:(1+ceiling(log2(j+1)))]]))/(1+length(2:(1+ceiling(log2(j+1)))))
-      v1[m] <- (v[m] + v[knn.res$indices[m,2]])/2
-    }
-    v1.k[, j] <- (v1)
-    
-    v2 <- v1[order(v1, decreasing = T)[(j+2):length(v1)]]
-    skew1 <- c(skew1, skewness(v2))
-    top.values <- v1[knn.res$indices[which.max(v1),1:(j+1)]]
-    #top.values <- v1[order(v1, decreasing = T)[1:(j)]]
-    #v2 <- c(v2[v2 <= (quantile(v2, 0.75)+1.5*IQR(v2)) & v2 >= (quantile(v2, 0.25)-1.5*IQR(v2))], rep(exp(mean(log(top.values[top.values>0]))), (2)))
-    v2 <- c(v2[v2 <= (quantile(v2, 0.75)+1.5*IQR(v2)) & v2 >= (quantile(v2, 0.25)-1.5*IQR(v2))], rep(sum(top.values[top.values>0])/length(top.values), (2)))
-    skew <- c(skew, skewness(v2))
-    
-    v1.sort <- sort(v1, decreasing = T)
-    top.ave <- c(top.ave, mean(v1.sort[1:(j)]))
-    remain.ave <- c(remain.ave, mean(v1.sort[(j+1):length(v1)]))
-  }  
-  
+data2 <- data[dimnames(data2)[[1]],]
+sf <- computeSumFactors(data2)
 
-  
-#}
-  
-ids <- which(skew > 2)
-#col <- rep('cls', dim(tmp)[2])  
+data2 <- t(t(data2)/sf)
 
-# for(id in ids){
-#   top.cell <- which.max(v1.k[,(id)])
-#   col[knn.res$indices[top.cell,1:(id+1)]] <- paste0(col[knn.res$indices[top.cell,1:(id+1)]], '_', id)
-#   
-# }
+res <- GapClust::GapClust(data2)
 
-col.mat <- matrix(0, length(ids), dim(tmp)[2])
-for(i in 1:length(ids)){
-  top.cell <- which.max(v1.k[,(ids[i])])
-  col.mat[i, knn.res$indices[top.cell,1:(ids[i]+1)]] <- skew[ids[i]]
-}
-
-#col.mat <- col.mat[, colSums(col.mat)>0]
-id.max <- apply(col.mat, 2, which.max)
-cnt <- table(id.max)
-id.max.match <- as.integer(names(cnt)[which(cnt == ids[sort(unique(id.max))] + 1)])
-
-cls <- rep(0, dim(tmp)[2])
-for(id.match in id.max.match){
-  cls[id.max==(id.match)] <- which(id.max.match %in% id.match)
-}
-
-rare.cells <- list()
-for(id.match in id.max.match){
-  rare.cells[[as.character(ids[id.match])]] <- knn.res$indices[which.max(v1.k[,ids[id.match]]), 1:(ids[id.match]+1)]
-}
-
-
-
+ids <- which(res$skewness > 2)
 
 
 tsne <- Rtsne::Rtsne(t(tmp), dims=2, perplexity=30)

@@ -18,8 +18,6 @@ library(ineq)
 source('../../Main/utils.R')
 #sourceCpp('/home/sam/Documents/FBT/Single/package/Rare/src/utils.cpp')
 
-fromdata.dir <- '../10X_subsample_B/results/'
-
 df <- read.csv('ExprM_3_subtypes_filter.csv', header=T)
 mat <- as.matrix(df[,2:dim(df)[2]])
 dimnames(mat)[[1]] <- df$X
