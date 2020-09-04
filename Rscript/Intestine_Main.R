@@ -28,10 +28,10 @@ data <- data[, sample.expressed>=200]
 norm.data <- .normalize_by_umi(t(data), gene_symbols = dimnames(data)[[1]], minLibSize=0, verbose = F)
 data2 <- t(norm.data$m)
 
-data2 <- data[dimnames(data2)[[1]],]
-sf <- computeSumFactors(data2)
+#data2 <- data2[dimnames(data2)[[1]],]
+#sf <- computeSumFactors(data2)
 
-data2 <- t(t(data2)/sf)
+#data2 <- t(t(data2)/sf)
 
 res <- GapClust::GapClust(data2)
 
