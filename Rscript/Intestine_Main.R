@@ -1,5 +1,4 @@
 library(FiRE)
-library(Rcpp)
 library(rflann)
 library(Seurat)
 library(ineq)
