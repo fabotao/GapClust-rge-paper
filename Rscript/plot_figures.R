@@ -351,11 +351,11 @@ p
 
 ###################################################################################################
 ## DE_sensitivity_plot
-load('results/AUC_result_ALL_2_cells.RData')
-load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene_2cells.RData')
-total <- length(auc.our[[1]])
+load('../10X_DE_sensitivity/results/AUC_result_ALL_2_cells.RData')
+#load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene_2cells.RData')
+total <- length(auc.result[[1]])
 df <- data.frame(x=rep(1:total, 6),
-                 y=c(1-auc.result[[1]], auc.our[[1]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
+                 y=c(1-auc.result[[1]], auc.result[[3]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
                  group=c(rep('RaceID', total), rep('GapClust', total), rep('GiniClust', total), 
                          rep('FiRE(1.5 x IQR)', total), rep('FiRE(1.0 x IQR)', total), rep('FiRE(0.5 x IQR)', total)))
 
@@ -398,11 +398,11 @@ sp2 + theme_bw() + theme(legend.position=c(0.15, 0.80),  # panel.grid.major = el
 
 
 ## 5 cells##
-load('results/AUC_result_ALL_5_cells.RData')
-load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene_5cells.RData')
-total <- length(auc.our[[1]])
+load('../10X_DE_sensitivity/results/AUC_result_ALL_5_cells.RData')
+#load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene_5cells.RData')
+total <- length(auc.result[[1]])
 df <- data.frame(x=rep(1:total, 6),
-                 y=c(1-auc.result[[1]], auc.our[[1]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
+                 y=c(1-auc.result[[1]], auc.result[[3]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
                  group=c(rep('RaceID', total), rep('GapClust', total), rep('GiniClust', total), 
                          rep('FiRE(1.5 x IQR)', total), rep('FiRE(1.0 x IQR)', total), rep('FiRE(0.5 x IQR)', total)))
 df$group <- factor(df$group, levels=c('GapClust', 'RaceID', 'GiniClust', 'FiRE(0.5 x IQR)', 'FiRE(1.0 x IQR)', 'FiRE(1.5 x IQR)'), ordered = T)
@@ -426,11 +426,11 @@ sp2 + theme_bw() + theme(legend.position='none', # panel.grid.major = element_bl
 
 
 ## 10 cells ##
-load('results/AUC_result_ALL_10_cells.RData')
-load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene.RData')
-total <- length(auc.our[[1]])
+load('../10X_DE_sensitivity/results/AUC_result_ALL_10_cells.RData')
+#load('results/AUC_res_OUR_20200530_log_devide_by_colMeans_density_filtered_gene.RData')
+total <- length(auc.result[[1]])
 df <- data.frame(x=rep(1:total, 6),
-                 y=c(1-auc.result[[1]], auc.our[[1]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
+                 y=c(1-auc.result[[1]], auc.result[[3]], 1-auc.result[[5]], 1- auc.result[[7]], 1-auc.result[[9]], 1-auc.result[[11]]),
                  group=c(rep('RaceID', total), rep('GapClust', total), rep('GiniClust', total), 
                          rep('FiRE(1.5 x IQR)', total), rep('FiRE(1.0 x IQR)', total), rep('FiRE(0.5 x IQR)', total)))
 df$group <- factor(df$group, levels=c('GapClust', 'RaceID', 'GiniClust', 'FiRE(0.5 x IQR)', 'FiRE(1.0 x IQR)', 'FiRE(1.5 x IQR)'), ordered = T)
