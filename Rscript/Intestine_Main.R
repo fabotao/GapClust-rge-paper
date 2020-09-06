@@ -74,27 +74,24 @@ genes <- c('Agr2', 'Muc2', 'Tff3',
            'Dclk1', 'Trpm5')
 
 
-#            'Alas2', 'Hbb-bs', 'Hbb-bt', 'Hba-a1', 'Hba-a2',
-# 'Cd8a', 'Cd8b1', 'Cd4', 'Cd19'
-
 
 library(pheatmap)
 
 
 col.rare <- col[col!= 'cls']
 col.rare <- as.character(factor(col.rare, levels=c('cls_1', 'cls_2', 'cls_3', 'cls_4', 'cls_5', 'cls_6'), labels=c('1', '2', '3', '4', '5', '6')))
-data1 <- data[, col!='cls']
+data1 <- data2[, col!='cls']
 annotation_col = data.frame(
   "Clusters" = factor(col.rare, levels=c('1', '2', '3', '4', '5', '6'))
 )
 rownames(annotation_col) = colnames(data1)
 cols = list(Clusters = c("1" = "red1", "2"="DeepSkyBlue", '3'='Magenta', '4'='green3', '5'='blue', '6'='orange'))
-plot.df <- log2(data2[(genes), c(which(col=='cls_1'), which(col=='cls_2'), which(col=='cls_3'), which(col=='cls_4'), 
-                                 which(col=='cls_5'), which(col=='cls_6'))]+1)
+plot.df <- log2(data1[(genes), c(which(col.rare=='1'), which(col.rare=='2'), which(col.rare=='3'), which(col.rare=='4'), 
+                                 which(col.rare=='5'), which(col.rare=='6'))]+1)
 dimnames(plot.df)[[1]] <- paste0('    ', dimnames(plot.df)[[1]])
 pheatmap(plot.df, 
          cluster_cols = F, cluster_rows = F, annotation_col = annotation_col, annotation_names_col=F, show_colnames = F, annotation_colors = cols,
-         gaps_col = c(6, 13, 27, 54, 83), legend=F, annotation_legend = F)
+         gaps_col = c(6, 13, 27, 56, 87), legend=F, annotation_legend = F)
 
 
 
