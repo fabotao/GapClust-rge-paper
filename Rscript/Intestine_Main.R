@@ -48,6 +48,7 @@ tsne <- Rtsne::Rtsne(t(tmp), dims=2, perplexity=30)
 #plot(tsne$Y[,1], tsne$Y[,2], cex=0.3, col=factor(col))
 tsne.df <- data.frame(TSNE.1=tsne$Y[,1], TSNE.2=tsne$Y[,2], cluster=col)
 #save(tsne.df, file='tsne_data.RData')
+load('tsne_data.RData') # To reproduce the same 2D TSNE plot
 p <- ggplot(data=tsne.df, aes(x=TSNE.1, y=TSNE.2, colour=cluster)) + geom_point(size=0.3) +
   theme_bw() + theme(legend.position='none',  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                      legend.text = element_text(size = 16),
