@@ -193,12 +193,12 @@ DE <- WilcoxDETest((data3), cells.1 = dimnames(data3)[[2]][grp=='cls_5'],
 logFC <- apply(data3, 1, function(x){log(mean(x[grp=='cls_5'])/mean(x[grp!='cls_5']))})
 
 data33 <- data3[!is.na(DE$p_val) & !is.na(logFC),]
-logFC4 <- logFC[!is.na(DE$p_val) & !is.na(logFC)]
-DE4 <- DE$p_val[!is.na(DE$p_val) & !is.na(logFC)]
-df4 <- data.frame(logFC=logFC4, p_val=DE4, gene=dimnames(data33)[[1]])
-df4 <- df4[p.adjust(df4$p_val, 'fdr') < 0.05,]
-gene4 <- as.character(df4$gene[order(df4$logFC, decreasing=T)[1:30]])
-pheatmap(t(log2(data3[unique(c(gene4)),c(which(grp=='cls_1'), which(grp=='cls_2'),  which(grp=='cls_3'), which(grp=='cls_4'), which(grp=='cls_5'), which(grp=='cls_6'))]+1)), 
+logFC5 <- logFC[!is.na(DE$p_val) & !is.na(logFC)]
+DE5 <- DE$p_val[!is.na(DE$p_val) & !is.na(logFC)]
+df5 <- data.frame(logFC=logFC5, p_val=DE5, gene=dimnames(data33)[[1]])
+df5 <- df5[p.adjust(df4$p_val, 'fdr') < 0.05,]
+gene5 <- as.character(df5$gene[order(df5$logFC, decreasing=T)[1:30]])
+pheatmap(t(log2(data3[unique(c(gene5)),c(which(grp=='cls_1'), which(grp=='cls_2'),  which(grp=='cls_3'), which(grp=='cls_4'), which(grp=='cls_5'), which(grp=='cls_6'))]+1)), 
                  cluster_cols = F, cluster_rows = F, show_rownames = F, annotation_colors = cols,
                  annotation_names_row=F, legend=T, annotation_legend = F, angle_col = "45")
 gene5 <- c('Gip', 'Cck', 'Fabp5', 'Rbp4', 'Scg2')
@@ -212,12 +212,12 @@ DE <- WilcoxDETest((data3), cells.1 = dimnames(data3)[[2]][grp=='cls_6'],
 logFC <- apply(data3, 1, function(x){log(mean(x[grp=='cls_6'])/mean(x[grp!='cls_6']))})
 
 data33 <- data3[!is.na(DE$p_val) & !is.na(logFC),]
-logFC4 <- logFC[!is.na(DE$p_val) & !is.na(logFC)]
-DE4 <- DE$p_val[!is.na(DE$p_val) & !is.na(logFC)]
-df4 <- data.frame(logFC=logFC4, p_val=DE4, gene=dimnames(data33)[[1]])
-df4 <- df4[p.adjust(df4$p_val, 'fdr') < 0.05,]
-gene4 <- as.character(df4$gene[order(df4$logFC, decreasing=T)[1:30]])
-pheatmap(t(log2(data3[unique(c(gene4)),c(which(grp=='cls_1'), which(grp=='cls_2'),  which(grp=='cls_3'), which(grp=='cls_4'), which(grp=='cls_5'), which(grp=='cls_6'))]+1)), 
+logFC6 <- logFC[!is.na(DE$p_val) & !is.na(logFC)]
+DE6 <- DE$p_val[!is.na(DE$p_val) & !is.na(logFC)]
+df6 <- data.frame(logFC=logFC6, p_val=DE6, gene=dimnames(data33)[[1]])
+df6 <- df6[p.adjust(df6$p_val, 'fdr') < 0.05,]
+gene6 <- as.character(df6$gene[order(df6$logFC, decreasing=T)[1:30]])
+pheatmap(t(log2(data3[unique(c(gene6)),c(which(grp=='cls_1'), which(grp=='cls_2'),  which(grp=='cls_3'), which(grp=='cls_4'), which(grp=='cls_5'), which(grp=='cls_6'))]+1)), 
                  cluster_cols = F, cluster_rows = F, show_rownames = F, annotation_colors = cols,
                  annotation_names_row=F, legend=T, annotation_legend = F, angle_col = "45")
 gene6 <- c('Gzma', 'Ccl5', 'Rgs1', 'Cd3g', 'Cd7', 'Gzmb')
